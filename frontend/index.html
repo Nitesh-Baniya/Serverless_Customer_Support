@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Customer support portal with secure file attachments">
+  <title>Support Center</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #172b4d;
+    }
+
+    header {
+      background: #123b68;
+      color: white;
+      padding: 22px max(6%, calc((100% - 1050px) / 2));
+    }
+
+    main {
+      max-width: 900px;
+      margin: 55px auto;
+      padding: 0 20px;
+    }
+
+    .intro {
+      text-align: center;
+      margin-bottom: 35px;
+    }
+
+    .intro h1 {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    .intro p {
+      color: #52647a;
+      line-height: 1.6;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e1e7ef;
+      border-radius: 12px;
+      padding: 26px;
+      box-shadow: 0 4px 14px #172b4d0a;
+    }
+
+    .card h2 {
+      font-size: 20px;
+    }
+
+    .card p {
+      color: #52647a;
+      line-height: 1.6;
+    }
+
+    form {
+      display: grid;
+      gap: 10px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font: inherit;
+    }
+
+    input[type="file"] {
+      background: #f8fafc;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    button {
+      background: #1769aa;
+      color: white;
+      border: 0;
+      border-radius: 7px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    button:hover {
+      background: #10538a;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 0;
+    }
+
+    .message {
+      overflow-wrap: anywhere;
+      line-height: 1.5;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px 15px;
+      color: #64748b;
+    }
+
+
+    /* Floating support chatbot */
+    .chat-launcher {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 1000;
+      border-radius: 28px;
+      padding: 15px 20px;
+      box-shadow: 0 5px 20px #172b4d30;
+      font-weight: bold;
+    }
+
+    .chat-panel {
+      position: fixed;
+      right: 24px;
+      bottom: 90px;
+      z-index: 1000;
+      width: min(380px, calc(100vw - 32px));
+      height: min(540px, calc(100dvh - 120px));
+      background: white;
+      border: 1px solid #dbe3ed;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px #172b4d30;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-panel[hidden] {
+      display: none;
+    }
+
+    .chat-header {
+      background: #123b68;
+      color: white;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-header p {
+      margin: 5px 0 0;
+      color: #e0eafa;
+      font-size: 12px;
+    }
+
+    .chat-close {
+      background: transparent;
+      font-size: 24px;
+      padding: 4px 10px;
+    }
+
+    .chat-close:hover {
+      background: #ffffff20;
+    }
+
+    .chat-messages {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f8fafc;
+    }
+
+    .chat-message {
+      max-width: 88%;
+      padding: 11px 13px;
+      border-radius: 12px;
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .chat-message.bot {
+      align-self: flex-start;
+      background: white;
+      border: 1px solid #e1e7ef;
+    }
+
+    .chat-message.user {
+      align-self: flex-end;
+      background: #1769aa;
+      color: white;
+    }
+
+    .chat-message.error {
+      border: 1px solid #f0b4b4;
+      color: #9b1c1c;
+      background: #fff5f5;
+    }
+
+    .chat-form {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid #e1e7ef;
+    }
+
+    .chat-form input {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .chat-form button {
+      flex-shrink: 0;
+    }
+
+    .chat-note {
+      margin: 0;
+      padding: 0 12px 10px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: #64748b;
+    }
+
+    @media (max-width: 480px) {
+      .chat-launcher {
+        right: 16px;
+        bottom: 16px;
+      }
+
+      .chat-panel {
+        right: 8px;
+        bottom: 78px;
+        width: calc(100vw - 16px);
+        height: min(540px, calc(100dvh - 96px));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <strong>Support Center</strong>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h1>How can we help you?</h1>
+      <p>Submit a support request, attach a file, or check your ticket status.</p>
+    </section>
+
+    <section class="cards">
+      <article class="card">
+        <h2>Submit a ticket</h2>
+        <p>Describe your problem and optionally attach a screenshot or document.</p>
+
+        <form id="ticketForm">
+          <label for="name">Name</label>
+          <input id="name" name="name" maxlength="100" required>
+
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" maxlength="254" required>
+
+          <label for="subject">Subject</label>
+          <input id="subject" name="subject" maxlength="200" required>
+
+          <label for="description">Description</label>
+          <textarea id="description" name="description" maxlength="5000" required></textarea>
+
+          <label for="attachment">Attachment (optional)</label>
+          <input id="attachment" name="attachment" type="file"
+            accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf">
+          <p class="hint">
+            PNG, JPEG, or PDF. Maximum size: 5 MiB.
+            Attachments are submitted for security scanning.
+          </p>
+
+          <button type="submit" id="submitButton">Create ticket</button>
+          <p id="formMessage" class="message" role="status" aria-live="polite"></p>
+        </form>
+      </article>
+
+      <article class="card">
+        <h2>Check ticket status</h2>
+        <p>Enter your ticket ID to check the latest status of your request.</p>
+
+        <form id="statusForm">
+          <label for="lookupTicketId">Ticket ID</label>
+          <input id="lookupTicketId" name="ticketId" placeholder="Enter your ticket ID" maxlength="36" required>
+
+          <button type="submit" id="lookupButton">Check status</button>
+          <p id="statusMessage" class="message" role="status" aria-live="polite"></p>
+        </form>
+      </article>
+
+      <article class="card">
+        <h2>Secure attachments</h2>
+        <p>
+          Uploaded files are stored privately and checked for malware.
+          Files are not made publicly accessible.
+        </p>
+      </article>
+
+      <article class="card">
+        <h2>Help and FAQs</h2>
+        <p>
+          Our support chatbot will help answer common questions in a later phase.
+        </p>
+      </article>
+    </section>
+  </main>
+
+
+  <footer>
+    Serverless Customer Support Platform · Built on AWS
+  </footer>
+
+  <button type="button" id="chatLauncher" class="chat-launcher" aria-expanded="false" aria-controls="chatPanel">
+    Chat with us
+  </button>
+
+  <section id="chatPanel" class="chat-panel" role="region" aria-label="Customer support chatbot" hidden>
+
+    <div class="chat-header">
+      <div>
+        <strong>Support Assistant</strong>
+        <p>Ask a question or manage a support ticket</p>
+      </div>
+      <button type="button" id="chatClose" class="chat-close" aria-label="Close chat">×</button>
+    </div>
+
+    <div id="chatMessages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions">
+      <div class="chat-message bot">
+        Hello! I can help you create a support ticket or check its status. How can I help?
+      </div>
+    </div>
+
+    <form id="chatForm" class="chat-form">
+      <label for="chatInput" hidden>Message</label>
+      <input id="chatInput" name="message" type="text" maxlength="1000" placeholder="Type your message..."
+        autocomplete="off" required>
+      <button type="submit" id="chatSend">Send</button>
+    </form>
+
+    <p class="chat-note">
+      Please don't share passwords, payment details, or other sensitive information.
+    </p>
+  </section>
+
+
+  <script>
+    const API_URL =
+      "YOUR_API_GATEWAY_URL_HERE"; // Replace with your API Gateway URL
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+    const ALLOWED_TYPES = [
+      "image/png",
+      "image/jpeg",
+      "application/pdf"
+    ];
+
+    const ticketForm = document.getElementById("ticketForm");
+    const attachmentInput = document.getElementById("attachment");
+    const formMessage = document.getElementById("formMessage");
+    const submitButton = document.getElementById("submitButton");
+
+    // Holds the ticket ID if ticket creation succeeded but upload failed.
+    // This lets the user retry the upload without creating another ticket.
+    let pendingTicketId = null;
+
+    function validateFile(file) {
+      if (!file) return null;
+
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        return "Choose a PNG, JPEG, or PDF file.";
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        return "The file exceeds the 5 MiB size limit.";
+      }
+
+      if (file.size === 0) {
+        return "The selected file is empty.";
+      }
+
+      return null;
+    }
+
+    async function readResponse(response) {
+      const text = await response.text();
+
+      try {
+        return text ? JSON.parse(text) : {};
+      } catch {
+        return {};
+      }
+    }
+
+    async function uploadAttachment(ticketId, file) {
+      // Ask our API for temporary authorization to upload this file.
+      const authorizationResponse = await fetch(
+        `${API_URL}/tickets/${encodeURIComponent(ticketId)}/attachments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contentType: file.type,
+            fileSize: file.size
+          })
+        }
+      );
+
+      const authorization = await readResponse(authorizationResponse);
+
+      if (!authorizationResponse.ok) {
+        throw new Error(
+          authorization.error || "Could not authorize the file upload."
+        );
+      }
+
+      const upload = authorization.upload;
+
+      if (!upload || !upload.url || !upload.fields) {
+        throw new Error("The upload authorization response was incomplete.");
+      }
+
+      // Send the exact fields returned by the presigned POST.
+      const uploadForm = new FormData();
+
+      for (const [key, value] of Object.entries(upload.fields)) {
+        uploadForm.append(key, String(value));
+      }
+
+      // The S3 presigned POST expects the file field to be named "file".
+      uploadForm.append("file", file, file.name);
+
+      // Do not manually set Content-Type; the browser adds the multipart boundary.
+      const s3Response = await fetch(upload.url, {
+        method: "POST",
+        body: uploadForm
+      });
+
+      if (!s3Response.ok) {
+        throw new Error(
+          `S3 upload failed with HTTP ${s3Response.status}.`
+        );
+      }
+    }
+
+    ticketForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const file = attachmentInput.files[0] || null;
+      const fileError = validateFile(file);
+
+      if (fileError) {
+        formMessage.textContent = fileError;
+        return;
+      }
+
+      submitButton.disabled = true;
+
+      try {
+        // If a ticket already exists, retry only its attachment upload.
+        if (pendingTicketId) {
+          if (!file) {
+            throw new Error(
+              "Choose the attachment you want to retry uploading."
+            );
+          }
+
+          formMessage.textContent =
+            `Retrying attachment upload for ticket ${pendingTicketId}...`;
+
+          await uploadAttachment(pendingTicketId, file);
+
+          const completedTicketId = pendingTicketId;
+          pendingTicketId = null;
+
+          formMessage.textContent =
+            `Attachment uploaded for ticket ${completedTicketId}. ` +
+            "It is awaiting security scanning; this does not mean it has passed the scan.";
+
+          ticketForm.reset();
+          submitButton.textContent = "Create ticket";
+          return;
+        }
+
+        // First create the ticket using the existing API.
+        const data = {
+          name: document.getElementById("name").value.trim(),
+          email: document.getElementById("email").value.trim(),
+          subject: document.getElementById("subject").value.trim(),
+          description: document.getElementById("description").value.trim()
+        };
+
+        formMessage.textContent = "Creating your ticket...";
+
+        const ticketResponse = await fetch(`${API_URL}/tickets`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        });
+
+        const ticketResult = await readResponse(ticketResponse);
+
+        if (!ticketResponse.ok) {
+          throw new Error(
+            ticketResult.error || "Could not create your ticket."
+          );
+        }
+
+        const ticketId = ticketResult.ticketId;
+
+        if (!ticketId) {
+          throw new Error(
+            "The API did not return a ticket ID. Check the API response before retrying."
+          );
+        }
+
+        // No attachment: ticket creation is complete.
+        if (!file) {
+          formMessage.textContent =
+            `Ticket created successfully! Your ticket ID is ${ticketId}.`;
+
+          ticketForm.reset();
+          return;
+        }
+
+        // Save the ID before uploading so a failed upload can be retried safely.
+        pendingTicketId = ticketId;
+        formMessage.textContent =
+          `Ticket ${ticketId} created. Uploading attachment...`;
+
+        try {
+          await uploadAttachment(ticketId, file);
+
+          pendingTicketId = null;
+          formMessage.textContent =
+            `Ticket ${ticketId} created and attachment uploaded. ` +
+            "The attachment is awaiting security scanning.";
+
+          ticketForm.reset();
+        } catch (uploadError) {
+          // Do not tell the user ticket creation failed: it already succeeded.
+          submitButton.textContent = "Retry attachment upload";
+
+          formMessage.textContent =
+            `Ticket ${ticketId} was created, but the attachment upload failed. ` +
+            `Your ticket is saved. Check the selected file and submit again to retry ` +
+            `the upload for this same ticket. Details: ${uploadError.message}`;
+        }
+      } catch (error) {
+        formMessage.textContent =
+          error.message || "Something went wrong. Please try again.";
+        console.error("Ticket operation failed:", error);
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    // Ticket status lookup
+    const statusForm = document.getElementById("statusForm");
+    const lookupButton = document.getElementById("lookupButton");
+    const statusMessage = document.getElementById("statusMessage");
+
+    statusForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const ticketId = document
+        .getElementById("lookupTicketId")
+        .value.trim();
+
+      const uuidPattern =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+      if (!uuidPattern.test(ticketId)) {
+        statusMessage.textContent = "Please enter a valid ticket ID.";
+        return;
+      }
+
+      lookupButton.disabled = true;
+      statusMessage.textContent = "Checking ticket status...";
+
+      try {
+        const response = await fetch(
+          `${API_URL}/tickets/${encodeURIComponent(ticketId)}`,
+          { method: "GET" }
+        );
+
+        const result = await readResponse(response);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Ticket not found. Check your ticket ID.");
+          }
+
+          if (response.status === 400) {
+            throw new Error("Please check the ticket ID and try again.");
+          }
+
+          throw new Error("Unable to check status. Please try again later.");
+        }
+
+        const formattedDate = result.createdAt
+          ? new Date(result.createdAt).toLocaleString()
+          : "Not available";
+
+        const resultText = [
+          `Ticket status: ${result.status}`,
+          `Created: ${formattedDate}`,
+          `Category: ${result.category ?? "Pending"}`,
+          `Priority: ${result.priority ?? "Pending"}`,
+          `Processing: ${result.processingStatus ?? "Pending"}`,
+          `Urgent review: ${result.escalationRequired === undefined
+            ? "Pending"
+            : result.escalationRequired
+              ? "Yes"
+              : "No"
+          }`
+        ].join(" | ");
+
+        statusMessage.textContent = resultText;
+
+
+      } catch (error) {
+        statusMessage.textContent =
+          error.message || "Unable to check status. Please try again later.";
+      } finally {
+        lookupButton.disabled = false;
+      }
+    });
+
+
+    /* Support chatbot */
+    const CHAT_API_URL =
+      "YOUR_CHATBOT_API_URL_HERE"; // Replace with your chatbot API URL
+
+    const chatLauncher = document.getElementById("chatLauncher");
+    const chatPanel = document.getElementById("chatPanel");
+    const chatClose = document.getElementById("chatClose");
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
+    const chatSend = document.getElementById("chatSend");
+    const chatMessages = document.getElementById("chatMessages");
+
+    // Keep one conversation session while this browser tab is open.
+    // This ID is not authentication or proof of ticket ownership.
+    const chatSessionId = crypto.randomUUID().replace(/-/g, "");
+
+    let chatBusy = false;
+
+    function setChatOpen(open) {
+      chatPanel.hidden = !open;
+      chatLauncher.setAttribute("aria-expanded", String(open));
+
+      if (open) {
+        chatInput.focus();
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } else {
+        chatLauncher.focus();
+      }
+    }
+
+    chatLauncher.addEventListener("click", () => {
+      setChatOpen(chatPanel.hidden);
+    });
+
+    chatClose.addEventListener("click", () => {
+      setChatOpen(false);
+    });
+
+    function addChatMessage(text, type = "bot") {
+      const message = document.createElement("div");
+      message.className = `chat-message ${type}`;
+
+      // Use textContent, not innerHTML, to prevent HTML injection.
+      message.textContent = text;
+
+      chatMessages.appendChild(message);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      return message;
+    }
+
+    chatForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const message = chatInput.value.trim();
+
+      if (!message || chatBusy) return;
+
+      if (
+        !CHAT_API_URL.startsWith("https://") ||
+        CHAT_API_URL.includes("PASTE_YOUR")
+      ) {
+        addChatMessage(
+          "The chatbot API URL has not been configured yet.",
+          "error"
+        );
+        return;
+      }
+
+      chatBusy = true;
+      chatInput.value = "";
+      chatInput.disabled = true;
+      chatSend.disabled = true;
+
+      addChatMessage(message, "user");
+
+      const loadingMessage = addChatMessage("Thinking...");
+
+      try {
+        const response = await fetch(`${CHAT_API_URL.replace(/\/+$/, "")}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message,
+            sessionId: chatSessionId
+          })
+        });
+
+        let result = {};
+
+        try {
+          result = await response.json();
+        } catch {
+          throw new Error("The chatbot returned an invalid response.");
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            result.error || `Chat request failed (HTTP ${response.status}).`
+          );
+        }
+
+        if (!Array.isArray(result.messages)) {
+          throw new Error("The chatbot response was incomplete.");
+        }
+
+        loadingMessage.remove();
+
+        if (result.messages.length === 0) {
+          addChatMessage(
+            "I couldn't generate a response. Please try rephrasing your message."
+          );
+        } else {
+          for (const reply of result.messages) {
+            if (typeof reply === "string" && reply.trim()) {
+              addChatMessage(reply);
+            }
+          }
+        }
+      } catch (error) {
+        loadingMessage.remove();
+
+        console.error("Chat request failed:", error);
+
+        addChatMessage(
+          "Sorry, I couldn't reach the support assistant. Please try again.",
+          "error"
+        );
+      } finally {
+        chatBusy = false;
+        chatInput.disabled = false;
+        chatSend.disabled = false;
+        chatInput.focus();
+      }
+    });
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,78 @@
+
+flowchart TB
+    User([Website visitor])
+
+    subgraph Frontend["Frontend — Mumbai deployment"]
+        CF["Amazon CloudFront<br/>HTTPS delivery"]
+        WebS3[("Private S3 website bucket<br/>index.html and assets")]
+        CF -->|"Origin Access Control"| WebS3
+    end
+
+    User --> CF
+
+    subgraph Mumbai["AWS Region: ap-south-1 — Mumbai"]
+        API["API Gateway<br/>SupportPortalAPI"]
+        Create["CreateSupportTicket Lambda"]
+        Get["GetSupportTicket Lambda"]
+        URL["GenerateUploadUrl Lambda"]
+        DB[("DynamoDB<br/>SupportTickets")]
+        SF["Step Functions<br/>SupportTicketProcessingWorkflow"]
+        Validate["ValidateSupportTicket"]
+        Classify["ClassifySupportTicket"]
+        Update["UpdateSupportTicket"]
+        Failed["MarkTicketProcessingFailed"]
+
+        Attach[("Private S3 attachments<br/>quarantine/ and accepted/")]
+        GuardDuty["GuardDuty Malware Protection<br/>for S3"]
+        EB["Amazon EventBridge"]
+        Scan["ProcessAttachmentScanResult Lambda"]
+
+        CW["CloudWatch alarms and logs"]
+        SNS["Amazon SNS email alerts"]
+
+        API -->|"POST /tickets"| Create
+        API -->|"GET /tickets/{ticketId}"| Get
+        API -->|"POST /tickets/{ticketId}/attachments"| URL
+
+        Create --> DB
+        Create --> SF
+        SF --> Validate --> Classify --> Update
+        SF -.->|"Failure handling"| Failed
+        Validate --> DB
+        Classify --> DB
+        Update --> DB
+        Failed --> DB
+        Get --> DB
+
+        URL -->|"Presigned upload"| Attach
+        Attach --> GuardDuty
+        GuardDuty --> EB
+        EB --> Scan
+        Scan -->|"Clean and valid only"| Attach
+
+        Create -.-> CW
+        Scan -.-> CW
+        Get -.-> CW
+        CW --> SNS
+        SF -.-> CW
+    end
+
+    CF -->|"HTTPS API requests"| API
+
+    subgraph Singapore["AWS Region: ap-southeast-1 — Singapore"]
+        ChatAPI["API Gateway<br/>SupportChatAPI"]
+        Proxy["LexChatProxy Lambda"]
+        Lex["Amazon Lex V2<br/>SupportAssistantBot"]
+        Fulfill["LexSupportFulfillment Lambda"]
+        ChatCW["CloudWatch logs and alarm"]
+        ChatSNS["SNS email alerts"]
+
+        ChatAPI --> Proxy
+        Proxy -->|"RecognizeText"| Lex
+        Lex --> Fulfill
+        Proxy -.-> ChatCW
+        ChatCW --> ChatSNS
+    end
+
+    CF -->|"POST /chat"| ChatAPI
+    Fulfill -->|"HTTPS API call"| API
